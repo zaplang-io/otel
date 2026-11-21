@@ -41,15 +41,25 @@ The exact signatures (keyword vs positional, defaults, return shapes) are not fi
 
 ## Build and test
 
-Test cases live under `tests/` and run with the `zap test` methodology:
+The test project installs this checkout as an `otel` path dependency. Run the
+native suites from the repository root:
 
-```
-zap test tests/
+```sh
+(cd tools/test_project && zap zenv create --no-venv)
+ZAP_ZENV="$PWD/tools/test_project/zenv" zap test tests/
 ```
 
 GitHub Actions runs the suite on pull requests and pushes inside the
 `ghcr.io/zaplang-io/zap:latest` container. CI stays pinned to `zap:latest`
 until this module reaches a 1.0 release.
+
+## Trace context
+
+The W3C wire codec treats incoming trace headers as untrusted metadata. It
+validates `traceparent` up to 8,192 bytes and `tracestate` up to 32,768 bytes
+with at most 32 entries. An invalid field raises `ValueError` at the codec
+boundary. Carrier integration and extraction into a span context are tracked
+in [#4](https://github.com/zaplang-io/otel/issues/4).
 
 ## Development
 

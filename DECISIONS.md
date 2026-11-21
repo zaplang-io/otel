@@ -17,4 +17,14 @@ the issue that introduces them.
 
 ## Decisions (2026-11-21)
 
-_No decisions recorded yet. Add one section per decision as issues are implemented._
+### W3C wire validation ([#4](https://github.com/zaplang-io/otel/issues/4))
+
+The wire codec operates on header text and defers carrier and span binding to
+the propagation layer. It reads the known prefix of `traceparent` versions
+above `00` and emits version `00` with only the sampled flag. It preserves the
+order of `tracestate` entries, moves updated entries to the front, and drops
+the rightmost entry when an insert would exceed the 32-member limit.
+
+The input caps are 8,192 bytes for `traceparent` and 32,768 bytes for
+`tracestate`. The latter allows a full list of maximum-width members plus
+optional whitespace. See [W3C Trace Context](https://www.w3.org/TR/trace-context/).

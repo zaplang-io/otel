@@ -17,4 +17,6 @@ jobs:
         with:
           persist-credentials: false
       - name: Run tests
-        run: zap test tests/
+        run: |
+          (cd tools/test_project && zap zenv create --no-venv)
+          ZAP_ZENV="$PWD/tools/test_project/zenv" zap test tests/
