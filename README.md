@@ -26,7 +26,7 @@ Planned scope (first cut):
 ```zap
 import otel
 
-tracer = otel.tracer("my-service")
+tracer = otel.get_tracer("my-service")
 
 with tracer.start_as_current_span("handle-request") as span:
     span.set_attribute("http.method", "GET")
@@ -38,7 +38,10 @@ requests = meter.create_counter("http.server.requests")
 requests.add(1, {"http.route": "/health"})
 ```
 
-The exact signatures (keyword vs positional, defaults, return shapes) are not final. Any ambiguity is escalated to the maintainer with Python/Go examples and recorded in [DECISIONS.md](DECISIONS.md) rather than decided unilaterally.
+Scoped spans use Zap's `with` statement. On scope exit, the span ends and the
+coroutine's previous current span is restored, including during exception
+unwinding. See [DECISIONS.md](DECISIONS.md) for the design and language dependency.
+The remaining signatures are provisional.
 
 ## Build and test
 
