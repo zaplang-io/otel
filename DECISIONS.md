@@ -47,3 +47,19 @@ for `OTEL_RESOURCE_ATTRIBUTES`. Split assignments before percent decoding,
 keep values as strings, and reject the whole input on a malformed assignment or
 escape. Detect duplicate keys after decoding. The decoder raises `ValueError`
 and includes no attribute data in the diagnostic.
+
+### Shared attribute values and semantic conventions ([#6](https://github.com/zaplang-io/otel/issues/6))
+
+Resources, metrics, and spans use `dict[str, AttributeValue]`. `AttributeValue`
+is a tagged enum with Boolean, signed 64-bit integer, double, and string
+variants, plus a homogeneous array variant for each scalar type. The tags
+retain the original value type, as Go's typed attribute constructors do, while
+allowing a Python-style heterogeneous mapping.
+
+Stable convention keys live in one `otel.semconv` module. `SCHEMA_VERSION`
+and `SCHEMA_URL` identify the published semantic-convention release. The first
+set follows [v1.45.0](https://github.com/open-telemetry/semantic-conventions/releases/tag/v1.45.0).
+
+The immutable `Resource` API depends on copying Boolean arrays. Zap's
+list iteration regression is tracked in
+[zaplang-io/zap#1241](https://github.com/zaplang-io/zap/issues/1241).
