@@ -39,3 +39,11 @@ retains member order, duplicate keys, properties, and percent-encoded values.
 The codec accepts up to 64 members and 8,192 bytes. Value decoding requires
 UTF-8 replacement support from
 [zaplang-io/zap#1242](https://github.com/zaplang-io/zap/issues/1242).
+
+### Environment resource attributes ([#6](https://github.com/zaplang-io/otel/issues/6))
+
+Follow the [OpenTelemetry Resource SDK](https://opentelemetry.io/docs/specs/otel/resource/sdk/)
+for `OTEL_RESOURCE_ATTRIBUTES`. Split assignments before percent decoding,
+keep values as strings, and reject the whole input on a malformed assignment or
+escape. Detect duplicate keys after decoding. The decoder raises `ValueError`
+and includes no attribute data in the diagnostic.
