@@ -17,7 +17,7 @@ Planned scope (first cut):
 
 - **Tracing API + SDK** — tracer, spans, span context, attributes, events, status.
 - **Metrics API + SDK** — counter, histogram, and gauge instruments with a meter provider.
-- **W3C trace-context propagation** — `traceparent` / `tracestate` inject and extract.
+- **W3C propagation** — `traceparent`, `tracestate`, and `baggage` inject and extract.
 - **OTLP exporter** — export spans and metrics over OTLP (HTTP first; gRPC a later decision).
 - **Resource + semantic conventions** — resource attributes and the common semantic-convention keys.
 
@@ -61,6 +61,10 @@ validates `traceparent` up to 8,192 bytes and `tracestate` up to 32,768 bytes
 with at most 32 entries. An invalid field raises `ValueError` at the codec
 boundary. Carrier integration and extraction into a span context are tracked
 in [#4](https://github.com/zaplang-io/otel/issues/4).
+
+The baggage wire codec accepts up to 64 members and 8,192 bytes per combined
+header. The planned carrier is a `dict[str, str]` with repeated HTTP header
+values combined in wire order.
 
 ## Development
 

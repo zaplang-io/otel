@@ -28,3 +28,14 @@ the rightmost entry when an insert would exceed the 32-member limit.
 The input caps are 8,192 bytes for `traceparent` and 32,768 bytes for
 `tracestate`. The latter allows a full list of maximum-width members plus
 optional whitespace. See [W3C Trace Context](https://www.w3.org/TR/trace-context/).
+
+Tier 1 uses a `dict[str, str]` carrier. The caller combines repeated HTTP
+values for the same header in wire order before passing the carrier. This
+keeps the default Python mapping shape. Go's `TextMapCarrier` abstracts the
+carrier behind accessor methods.
+
+Tier 1 includes [W3C Baggage](https://www.w3.org/TR/baggage/). The wire layer
+retains member order, duplicate keys, properties, and percent-encoded values.
+The codec accepts up to 64 members and 8,192 bytes. Value decoding requires
+UTF-8 replacement support from
+[zaplang-io/zap#1242](https://github.com/zaplang-io/zap/issues/1242).
