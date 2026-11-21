@@ -6,7 +6,8 @@ OpenTelemetry (tracing + metrics) for [Zap](https://github.com/zaplang-io/zap) â
 - Contributor & agent conventions: [AGENTS.md](AGENTS.md)
 - Design decisions: [DECISIONS.md](DECISIONS.md)
 
-> **Status: docs-first.** No implementation yet â€” the planned surface is tracked in the [issues](https://github.com/zaplang-io/otel/issues) (see the Tier-1 scope epic).
+> **Status: in development.** The [Tier-1 scope epic](https://github.com/zaplang-io/otel/issues/1)
+> tracks the planned public API.
 
 ## Goals
 
