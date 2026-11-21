@@ -88,6 +88,13 @@ instruments and reader are tracked in [#3](https://github.com/zaplang-io/otel/is
 Counters and histograms use `MetricNumber.Int` or `MetricNumber.Double`.
 Observable gauge callbacks will return a list of observations to the reader.
 
+## OTLP endpoints
+
+OTLP/HTTP uses the signal-specific endpoint when configured. Otherwise, it
+appends `v1/traces` or `v1/metrics` to the general endpoint, which defaults to
+`http://localhost:4318`. Endpoint resolution is implemented. Export and wire
+encoding are tracked in [#5](https://github.com/zaplang-io/otel/issues/5).
+
 ## Development
 
 Read **[AGENTS.md](AGENTS.md)** before contributing — it covers the opentelemetry-python-parity rule, the one-issue-one-PR flow, how design decisions are recorded in **[DECISIONS.md](DECISIONS.md)**, and the rule for reporting core Zap language/stdlib defects upstream in `zaplang-io/zap` (rather than working around them here).

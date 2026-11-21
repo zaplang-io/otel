@@ -8,3 +8,4 @@
 - Added shared typed attributes and versioned semantic-convention metadata.
 - Added explicit histogram bucket layouts and boundary validation.
 - Added tagged integer and double metric measurements.
+- Added endpoint resolution for OTLP/HTTP trace and metric export.
