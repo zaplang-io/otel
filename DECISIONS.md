@@ -17,4 +17,25 @@ the issue that introduces them.
 
 ## Decisions (2026-11-21)
 
-_No decisions recorded yet. Add one section per decision as issues are implemented._
+### W3C wire validation ([#4](https://github.com/zaplang-io/otel/issues/4))
+
+The wire codec operates on header text and defers carrier and span binding to
+the propagation layer. It reads the known prefix of `traceparent` versions
+above `00` and emits version `00` with only the sampled flag. It preserves the
+order of `tracestate` entries, moves updated entries to the front, and drops
+the rightmost entry when an insert would exceed the 32-member limit.
+
+The input caps are 8,192 bytes for `traceparent` and 32,768 bytes for
+`tracestate`. The latter allows a full list of maximum-width members plus
+optional whitespace. See [W3C Trace Context](https://www.w3.org/TR/trace-context/).
+
+Tier 1 uses a `dict[str, str]` carrier. The caller combines repeated HTTP
+values for the same header in wire order before passing the carrier. This
+keeps the default Python mapping shape. Go's `TextMapCarrier` abstracts the
+carrier behind accessor methods.
+
+Tier 1 includes [W3C Baggage](https://www.w3.org/TR/baggage/). The wire layer
+retains member order, duplicate keys, properties, and percent-encoded values.
+The codec accepts up to 64 members and 8,192 bytes. Value decoding requires
+UTF-8 replacement support from
+[zaplang-io/zap#1242](https://github.com/zaplang-io/zap/issues/1242).
