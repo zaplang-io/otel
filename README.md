@@ -85,6 +85,9 @@ unless the caller supplies a layout. Custom boundaries must be finite and
 strictly increasing. Each upper bound belongs to its bucket. The metric
 instruments and reader are tracked in [#3](https://github.com/zaplang-io/otel/issues/3).
 
+Counters and histograms use `MetricNumber.Int` or `MetricNumber.Double`.
+Observable gauge callbacks will return a list of observations to the reader.
+
 ## Development
 
 Read **[AGENTS.md](AGENTS.md)** before contributing — it covers the opentelemetry-python-parity rule, the one-issue-one-PR flow, how design decisions are recorded in **[DECISIONS.md](DECISIONS.md)**, and the rule for reporting core Zap language/stdlib defects upstream in `zaplang-io/zap` (rather than working around them here).

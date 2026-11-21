@@ -7,3 +7,4 @@
 - Added decoding and validation for `OTEL_RESOURCE_ATTRIBUTES`.
 - Added shared typed attributes and versioned semantic-convention metadata.
 - Added explicit histogram bucket layouts and boundary validation.
+- Added tagged integer and double metric measurements.
