@@ -123,5 +123,16 @@ provides scope cleanup. `ContextVar[Span]` and its reset token bind the span
 in the current coroutine. A spawned child inherits the binding at spawn time.
 See [zaplang-io/zap#1237](https://github.com/zaplang-io/zap/issues/1237).
 
-Importing the tracing module depends on the struct-global method lowering fix
-tracked in [zaplang-io/zap#1258](https://github.com/zaplang-io/zap/issues/1258).
+Imported tracing methods use the compiler fix in
+[zaplang-io/zap#1273](https://github.com/zaplang-io/zap/pull/1273).
+
+### Recorded span data ([#2](https://github.com/zaplang-io/otel/issues/2))
+
+Attributes use the shared tagged values. Spans copy attributes at insertion
+and on read, including array payloads. Events and links retain insertion order.
+Event timestamps are Unix nanoseconds. An explicit timestamp of zero is valid.
+Links require a valid span context and keep a copy of it. Both `start_span`
+and `start_as_current_span` accept initial attributes and links.
+
+Status follows the OpenTelemetry precedence `Ok > Error > Unset`. Only `Error`
+retains a description. Span mutations after the first `end()` are ignored.

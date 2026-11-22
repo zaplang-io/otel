@@ -26,11 +26,12 @@ Planned scope (first cut):
 ```zap
 import otel.trace as trace
 import otel.metrics as metrics
+import otel.attributes as attr
 
 tracer = trace.get_tracer("my-service")
 
 with tracer.start_as_current_span("handle-request") as span:
-    span.set_attribute("http.method", "GET")
+    span.set_attribute("http.request.method", attr.AttributeValue.Str("GET"))
     span.add_event("cache-miss")
     # ... work ...
 
@@ -43,6 +44,12 @@ Scoped spans use Zap's `with` statement. On scope exit, the span ends and the
 coroutine's previous current span is restored, including during exception
 unwinding. See [DECISIONS.md](DECISIONS.md) for the design and language dependency.
 The remaining signatures are provisional.
+
+Spans accept typed attributes and links at creation. During recording, use
+`set_attribute`, `set_attributes`, `add_event`, `add_link`, and `set_status`.
+Events use the current Unix nanosecond timestamp unless supplied explicitly.
+Attribute, event, link, and status accessors return snapshots. Mutations after
+`end()` leave the recorded span unchanged.
 
 ## Build and test
 
