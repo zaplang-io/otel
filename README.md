@@ -25,6 +25,7 @@ Planned scope (first cut):
 
 ```zap
 import otel.trace as trace
+import otel.metrics as metrics
 
 tracer = trace.get_tracer("my-service")
 
@@ -33,7 +34,7 @@ with tracer.start_as_current_span("handle-request") as span:
     span.add_event("cache-miss")
     # ... work ...
 
-meter = otel.meter("my-service")
+meter = metrics.get_meter("my-service")
 requests = meter.create_counter("http.server.requests")
 requests.add(1, {"http.route": "/health"})
 ```
