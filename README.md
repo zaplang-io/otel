@@ -66,6 +66,18 @@ The baggage wire codec accepts up to 64 members and 8,192 bytes per combined
 header. The planned carrier is a `dict[str, str]` with repeated HTTP header
 values combined in wire order.
 
+## Resource configuration
+
+The resource SDK reads `OTEL_RESOURCE_ATTRIBUTES` as a comma-separated list of
+assignments. Use percent escapes for literal `,` and `=` in keys and values.
+Values are strings. A malformed assignment or duplicate decoded key invalidates
+the entire variable. The resource API and default attributes are tracked in
+[#6](https://github.com/zaplang-io/otel/issues/6).
+
+Use `otel.attributes.AttributeValue` for scalar and homogeneous array
+attributes. The `otel.semconv` module exposes stable service, SDK, HTTP,
+server, and network keys along with their schema version and URL.
+
 ## Development
 
 Read **[AGENTS.md](AGENTS.md)** before contributing — it covers the opentelemetry-python-parity rule, the one-issue-one-PR flow, how design decisions are recorded in **[DECISIONS.md](DECISIONS.md)**, and the rule for reporting core Zap language/stdlib defects upstream in `zaplang-io/zap` (rather than working around them here).
