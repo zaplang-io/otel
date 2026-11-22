@@ -63,3 +63,23 @@ set follows [v1.45.0](https://github.com/open-telemetry/semantic-conventions/rel
 The immutable `Resource` API depends on copying Boolean arrays. Zap's
 list iteration regression is tracked in
 [zaplang-io/zap#1241](https://github.com/zaplang-io/zap/issues/1241).
+
+### Explicit histogram buckets ([#3](https://github.com/zaplang-io/otel/issues/3))
+
+Use the default boundaries and inclusive upper bounds from the
+[OpenTelemetry Metrics SDK](https://opentelemetry.io/docs/specs/otel/metrics/sdk/#explicit-bucket-histogram-aggregation).
+Custom boundaries are finite, strictly increasing, and copied at construction.
+An empty boundary list yields one bucket. A nonfinite floating-point
+measurement raises `ValueError` before bucket selection.
+
+### Measurements and observable callbacks ([#3](https://github.com/zaplang-io/otel/issues/3))
+
+Use Python's `create_counter` and `create_histogram` names. Measurements use
+one `MetricNumber` sum type with signed 64-bit integer and double variants.
+This retains the source precision in the tagged value. Go makes the numeric
+type part of the factory name, for example `Int64Counter`.
+
+Observable gauge callbacks receive `CallbackOptions` (including the collection
+timeout) and return a `list[Observation]`. An observation carries a
+`MetricNumber` and its attribute mapping. This follows Python's returned
+observations. Go invokes callbacks with an observer that accepts measurements.
