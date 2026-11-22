@@ -71,12 +71,27 @@ values combined in wire order.
 The resource SDK reads `OTEL_RESOURCE_ATTRIBUTES` as a comma-separated list of
 assignments. Use percent escapes for literal `,` and `=` in keys and values.
 Values are strings. A malformed assignment or duplicate decoded key invalidates
-the entire variable. The resource API and default attributes are tracked in
-[#6](https://github.com/zaplang-io/otel/issues/6).
+the entire variable.
 
 Use `otel.attributes.AttributeValue` for scalar and homogeneous array
 attributes. The `otel.semconv` module exposes stable service, SDK, HTTP,
 server, and network keys along with their schema version and URL.
+
+```zap
+import otel.attributes as attr
+import otel.resource as resource
+import otel.semconv as semconv
+
+auto app = resource.create({semconv.SERVICE_NAME: attr.AttributeValue.Str("checkout")})
+auto attributes = app.attributes()
+```
+
+`resource.create` applies SDK defaults, `OTEL_RESOURCE_ATTRIBUTES`,
+`OTEL_SERVICE_NAME`, then explicit attributes. With no service name it uses
+`unknown_service`. `attributes()` returns a copy, including arrays, and
+`merge(other)` returns a resource with `other`'s attributes taking precedence.
+Conflicting nonempty schema URLs leave the original resource in place and emit
+a warning.
 
 ## Histogram buckets
 
