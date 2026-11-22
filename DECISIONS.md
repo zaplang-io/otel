@@ -36,9 +36,9 @@ carrier behind accessor methods.
 
 Tier 1 includes [W3C Baggage](https://www.w3.org/TR/baggage/). The wire layer
 retains member order, duplicate keys, properties, and percent-encoded values.
-The codec accepts up to 64 members and 8,192 bytes. Value decoding requires
-UTF-8 replacement support from
-[zaplang-io/zap#1242](https://github.com/zaplang-io/zap/issues/1242).
+The codec accepts up to 64 members and 8,192 bytes. The value layer uses
+`url.unquote(errors="replace")` for invalid UTF-8 and percent-encodes values
+and property values on output. A literal `+` is preserved when decoding.
 
 ### Environment resource attributes ([#6](https://github.com/zaplang-io/otel/issues/6))
 

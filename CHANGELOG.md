@@ -13,3 +13,4 @@
 - Added scoped span lifecycle, span contexts, IDs, and named tracers.
 - Added span attributes, timestamped events, links, and status.
 - Added synchronous start and end hooks for tracer-provider span processors.
+- Added UTF-8 baggage value decoding and percent-encoded serialization.
