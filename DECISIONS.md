@@ -60,9 +60,19 @@ Stable convention keys live in one `otel.semconv` module. `SCHEMA_VERSION`
 and `SCHEMA_URL` identify the published semantic-convention release. The first
 set follows [v1.45.0](https://github.com/open-telemetry/semantic-conventions/releases/tag/v1.45.0).
 
-The immutable `Resource` API depends on copying Boolean arrays. Zap's
-list iteration regression is tracked in
-[zaplang-io/zap#1241](https://github.com/zaplang-io/zap/issues/1241).
+### Immutable resources and detection precedence ([#6](https://github.com/zaplang-io/otel/issues/6))
+
+Use `resource.create(attributes, schema_url=...)` to construct a `Resource`.
+The module factory follows Python's `Resource.create` and applies SDK defaults,
+`OTEL_RESOURCE_ATTRIBUTES`, `OTEL_SERVICE_NAME`, and explicit attributes in
+increasing priority. An empty service name falls back to the other sources.
+If the environment attribute list is malformed, emit a warning and retain the
+other sources.
+
+Resource attributes are snapshots, including array values. `merge` gives the
+updating resource's attributes priority. An empty schema URL is unspecified.
+If both schema URLs are specified and differ, emit a warning and return the
+original resource, matching Python's behavior.
 
 ### Explicit histogram buckets ([#3](https://github.com/zaplang-io/otel/issues/3))
 

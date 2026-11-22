@@ -9,3 +9,4 @@
 - Added explicit histogram bucket layouts and boundary validation.
 - Added tagged integer and double metric measurements.
 - Added endpoint resolution for OTLP/HTTP trace and metric export.
+- Added immutable resources, default attributes, environment detection, and merge.
