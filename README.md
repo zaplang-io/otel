@@ -120,6 +120,8 @@ instruments and reader are tracked in [#3](https://github.com/zaplang-io/otel/is
 
 Counters and histograms use `MetricNumber.Int` or `MetricNumber.Double`.
 Observable gauge callbacks will return a list of observations to the reader.
+The counter sum retains integer precision until a double is added. It rejects
+negative, nonfinite, and overflowing additions.
 
 ## OTLP endpoints
 
