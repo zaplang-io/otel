@@ -119,7 +119,9 @@ explicitly, and the caller ends the span with `Span.End()`. The maintainer
 approved Python-style scoping and coroutine-local context for Zap.
 
 Zap's [context-manager protocol](https://github.com/zaplang-io/zap/blob/3138b083c489713902eeb150643f002041885af5/DECISIONS.md#d-0069--context-manager-protocol--with-i185)
-provides scope cleanup. Current-span binding depends on coroutine-local
-execution context in [zaplang-io/zap#1237](https://github.com/zaplang-io/zap/issues/1237).
-The runtime must preserve the binding when the coroutine suspends and keep it
-isolated from other coroutines.
+provides scope cleanup. `ContextVar[Span]` and its reset token bind the span
+in the current coroutine. A spawned child inherits the binding at spawn time.
+See [zaplang-io/zap#1237](https://github.com/zaplang-io/zap/issues/1237).
+
+Importing the tracing module depends on the struct-global method lowering fix
+tracked in [zaplang-io/zap#1258](https://github.com/zaplang-io/zap/issues/1258).

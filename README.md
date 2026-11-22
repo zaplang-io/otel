@@ -24,9 +24,9 @@ Planned scope (first cut):
 ## Usage (planned — illustrative only)
 
 ```zap
-import otel
+import otel.trace as trace
 
-tracer = otel.get_tracer("my-service")
+tracer = trace.get_tracer("my-service")
 
 with tracer.start_as_current_span("handle-request") as span:
     span.set_attribute("http.method", "GET")
