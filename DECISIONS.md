@@ -104,3 +104,24 @@ query, and fragment during resolution. Invalid URLs raise `ValueError`.
 
 Wire encoding depends on the Protocol Buffers implementation tracked in
 [zaplang-io/zap#524](https://github.com/zaplang-io/zap/issues/524).
+
+### Tracing scope and current span ([#2](https://github.com/zaplang-io/otel/issues/2))
+
+The tracing API follows Python's `start_as_current_span` context manager. Use
+`with tracer.start_as_current_span("request") as span:` to bind the current
+span in the running coroutine. Calls made within that scope can read the
+current span without passing it through each function. A nested span uses the
+current span as its parent. Leaving the scope ends the span and restores the
+previous binding on both normal exit and exception unwinding.
+
+Go's `Tracer.Start(ctx, name)` returns an updated context that callers pass
+explicitly, and the caller ends the span with `Span.End()`. The maintainer
+approved Python-style scoping and coroutine-local context for Zap.
+
+Zap's [context-manager protocol](https://github.com/zaplang-io/zap/blob/3138b083c489713902eeb150643f002041885af5/DECISIONS.md#d-0069--context-manager-protocol--with-i185)
+provides scope cleanup. `ContextVar[Span]` and its reset token bind the span
+in the current coroutine. A spawned child inherits the binding at spawn time.
+See [zaplang-io/zap#1237](https://github.com/zaplang-io/zap/issues/1237).
+
+Importing the tracing module depends on the struct-global method lowering fix
+tracked in [zaplang-io/zap#1258](https://github.com/zaplang-io/zap/issues/1258).
