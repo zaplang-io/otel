@@ -83,3 +83,14 @@ Observable gauge callbacks receive `CallbackOptions` (including the collection
 timeout) and return a `list[Observation]`. An observation carries a
 `MetricNumber` and its attribute mapping. This follows Python's returned
 observations. Go invokes callbacks with an observer that accepts measurements.
+
+### OTLP/HTTP endpoint resolution ([#5](https://github.com/zaplang-io/otel/issues/5))
+
+Follow the [OTLP Exporter specification](https://opentelemetry.io/docs/specs/otel/protocol/exporter/#endpoint-urls-for-otlphttp).
+Signals use their explicit HTTP or HTTPS endpoint when set, with `/` supplied
+when the URL has no path. Otherwise, append the signal path to the general
+endpoint. Preserve the configured scheme spelling, authority, path escapes,
+query, and fragment during resolution. Invalid URLs raise `ValueError`.
+
+Wire encoding depends on the Protocol Buffers implementation tracked in
+[zaplang-io/zap#524](https://github.com/zaplang-io/zap/issues/524).
