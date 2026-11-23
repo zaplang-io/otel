@@ -26,6 +26,22 @@ struct Link:
     SpanContext context
     dict[str, attr.AttributeValue] attributes
 
+interface ReadableSpan:
+    def name(self) -> str
+    def kind(self) -> SpanKind
+    def get_span_context(self) -> SpanContext
+    def parent_context(self) -> Optional[SpanContext]
+    def start_time(self) -> int64
+    def end_time(self) -> Optional[int64]
+    def attributes(self) -> dict[str, attr.AttributeValue]
+    def events(self) -> list[Event]
+    def links(self) -> list[Link]
+    def status(self) -> Status
+
+interface SpanProcessor:
+    def on_start(self, Span span, Optional[SpanContext] parent_context)
+    def on_end(self, ReadableSpan span)
+
 struct SpanContext:
     str trace_id
     str span_id
@@ -79,6 +95,7 @@ struct Span:
     list[Event] _events = []
     list[Link] _links = []
     Status _status = Status()
+    list[SpanProcessor] _processors = []
 
     def get_span_context(self) -> SpanContext:
         "Return a copy of the span's propagation context."
@@ -212,8 +229,14 @@ struct Span:
     def end(self):
         "Finish recording the span once."
         with self._lock:
-            if self._end_time.is_none():
-                self._end_time = Optional.Some(time.time_ns())
+            if not self._end_time.is_none():
+                return
+            self._end_time = Optional.Some(time.time_ns())
+        for processor in self._processors:
+            try:
+                processor.on_end(self)
+            except Exception:
+                logging.warning("OpenTelemetry span processor on_end failed")
 
 ContextVar[Span] _current_span = ContextVar[Span]("otel.current_span")
 
@@ -232,6 +255,7 @@ def _random_id(int64 width, str zero) -> str:
 
 struct Tracer:
     str _name
+    Optional[TracerProvider] _provider = None
 
     def name(self) -> str:
         return self._name
@@ -263,6 +287,16 @@ struct Tracer:
         span.set_attributes(attributes)
         for link in links:
             span.add_link(link.context, attributes=link.attributes)
+        match self._provider:
+            case Optional.Some(provider):
+                span._processors = provider._span_processors()
+            case Optional.None:
+                pass
+        for processor in span._processors:
+            try:
+                processor.on_start(span, span.parent_context())
+            except Exception:
+                logging.warning("OpenTelemetry span processor on_start failed")
         return span
 
     def start_as_current_span(
@@ -312,13 +346,32 @@ struct CurrentSpan:
                 pass
 
 struct TracerProvider:
+    Lock _processor_lock = threading.Lock()
+    list[SpanProcessor] _processors = []
+
     def get_tracer(self, str name) -> Tracer:
         "Get a tracer for a named instrumentation scope."
         if name.strip() == "":
             raise ValueError("tracer name must not be empty")
-        return Tracer(name)
+        return Tracer(name, Optional.Some(self))
+
+    def add_span_processor(self, SpanProcessor processor):
+        "Register a processor for spans started by this provider."
+        with self._processor_lock:
+            self._processors.append(processor)
+
+    def _span_processors(self) -> list[SpanProcessor]:
+        list[SpanProcessor] processors = []
+        with self._processor_lock:
+            for processor in self._processors:
+                processors.append(processor)
+        return processors
 
 const TracerProvider _default_provider = TracerProvider()
+
+def get_tracer_provider() -> TracerProvider:
+    "Return the default tracer provider."
+    return _default_provider
 
 def get_tracer(str name) -> Tracer:
     "Get a tracer from the default provider."

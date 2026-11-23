@@ -136,3 +136,17 @@ and `start_as_current_span` accept initial attributes and links.
 
 Status follows the OpenTelemetry precedence `Ok > Error > Unset`. Only `Error`
 retains a description. Span mutations after the first `end()` are ignored.
+
+### Span processors ([#2](https://github.com/zaplang-io/otel/issues/2))
+
+Register processors on a `TracerProvider`. `on_start(span, parent_context)`
+receives the recording span and `Optional[SpanContext]`, which is absent for a
+root. `on_end(span)` receives a read-only `ReadableSpan` after the end time is
+set. Both hooks run synchronously in registration order. A span keeps the
+processor list it started with, and callback failures are logged without
+interrupting the remaining callbacks.
+
+Native CI exercises the original optional timestamp constructor and the
+read-only processor contract. Those paths are blocked by
+[Zap #1308](https://github.com/zaplang-io/zap/issues/1308) and
+[Zap #1309](https://github.com/zaplang-io/zap/issues/1309).

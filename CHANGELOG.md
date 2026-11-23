@@ -12,3 +12,4 @@
 - Added immutable resources, default attributes, environment detection, and merge.
 - Added scoped span lifecycle, span contexts, IDs, and named tracers.
 - Added span attributes, timestamped events, links, and status.
+- Added synchronous start and end hooks for tracer-provider span processors.

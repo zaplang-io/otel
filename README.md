@@ -51,6 +51,10 @@ Events use the current Unix nanosecond timestamp unless supplied explicitly.
 Attribute, event, link, and status accessors return snapshots. Mutations after
 `end()` leave the recorded span unchanged.
 
+Register span processors with `TracerProvider.add_span_processor`. The start
+hook receives the recording span and its optional parent context. The end
+hook receives a read-only view of the finished span.
+
 ## Build and test
 
 The test project installs this checkout as an `otel` path dependency. Run the
