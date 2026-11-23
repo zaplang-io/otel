@@ -74,15 +74,22 @@ until this module reaches a 1.0 release.
 The W3C wire codec treats incoming trace headers as untrusted metadata. It
 validates `traceparent` up to 8,192 bytes and `tracestate` up to 32,768 bytes
 with at most 32 entries. An invalid field raises `ValueError` at the codec
-boundary. Carrier integration and extraction into a span context are tracked
-in [#4](https://github.com/zaplang-io/otel/issues/4).
+boundary. The public `extract` function preserves valid context components
+when a propagation field is missing or malformed.
 
 The baggage wire codec accepts up to 64 members and 8,192 bytes per combined
-header. The planned carrier is a `dict[str, str]` with repeated HTTP header
+header. The carrier is a `dict[str, str]` with repeated HTTP header
 values combined in wire order.
 
 The baggage value codec percent-decodes UTF-8 with replacement for malformed
 sequences. It preserves entry order and property metadata.
+
+Use `propagate.extract(inbound)` to get the incoming context, `attach` to make
+it active, and `detach` in `finally` to restore the previous context. A span
+started while the context is active continues the incoming trace. Use
+`propagate.inject(outbound)` to write the current span context and baggage.
+Both `extract` and `inject` accept an explicit context. A reused carrier can
+be cleared using the names returned by `propagate.fields()`.
 
 ## Resource configuration
 

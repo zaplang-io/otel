@@ -15,3 +15,4 @@
 - Added synchronous start and end hooks for tracer-provider span processors.
 - Added UTF-8 baggage value decoding and percent-encoded serialization.
 - Added validated integer and double counter summation.
+- Added W3C carrier injection and extraction, baggage binding, and remote-parent continuation.

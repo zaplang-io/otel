@@ -96,6 +96,7 @@ struct Span:
     list[Link] _links = []
     Status _status = Status()
     list[SpanProcessor] _processors = []
+    bool _recording = True
 
     def get_span_context(self) -> SpanContext:
         "Return a copy of the span's propagation context."
@@ -126,12 +127,12 @@ struct Span:
 
     def is_recording(self) -> bool:
         "Return whether this span is still recording."
-        return self.end_time().is_none()
+        return self._recording and self.end_time().is_none()
 
     def set_attribute(self, str key, attr.AttributeValue value):
         "Set an attribute on a recording span, replacing any previous value."
         with self._lock:
-            if not self._end_time.is_none():
+            if not self._recording or not self._end_time.is_none():
                 return
             if key == "":
                 raise ValueError("span attribute key must not be empty")
@@ -140,7 +141,7 @@ struct Span:
     def set_attributes(self, dict[str, attr.AttributeValue] attributes):
         "Set several attributes on a recording span."
         with self._lock:
-            if not self._end_time.is_none():
+            if not self._recording or not self._end_time.is_none():
                 return
             auto values = _snapshot_attributes(attributes)
             for key, value in values.items():
@@ -159,7 +160,7 @@ struct Span:
     ):
         "Append an event, using the current Unix nanosecond time by default."
         with self._lock:
-            if not self._end_time.is_none():
+            if not self._recording or not self._end_time.is_none():
                 return
             int64 at = 0
             match timestamp:
@@ -190,7 +191,7 @@ struct Span:
     ):
         "Append a link to a valid span context."
         with self._lock:
-            if not self._end_time.is_none():
+            if not self._recording or not self._end_time.is_none():
                 return
             if not context.is_valid():
                 raise ValueError("span link context must be valid")
@@ -214,7 +215,7 @@ struct Span:
     def set_status(self, Status status):
         "Set the span status. Ok is final, and descriptions apply to Error."
         with self._lock:
-            if not self._end_time.is_none() or self._status.status_code == StatusCode.Ok or status.status_code == StatusCode.Unset:
+            if not self._recording or not self._end_time.is_none() or self._status.status_code == StatusCode.Ok or status.status_code == StatusCode.Unset:
                 return
             str description = ""
             if status.status_code == StatusCode.Error:
@@ -229,7 +230,7 @@ struct Span:
     def end(self):
         "Finish recording the span once."
         with self._lock:
-            if not self._end_time.is_none():
+            if not self._recording or not self._end_time.is_none():
                 return
             self._end_time = Optional.Some(time.time_ns())
         for processor in self._processors:
@@ -238,14 +239,39 @@ struct Span:
             except Exception:
                 logging.warning("OpenTelemetry span processor on_end failed")
 
-ContextVar[Span] _current_span = ContextVar[Span]("otel.current_span")
+struct _SpanBinding:
+    Optional[Span] span
+
+ContextVar[_SpanBinding] _current_span = ContextVar[_SpanBinding]("otel.current_span")
 
 def get_current_span() -> Optional[Span]:
     "Return the active span for the current coroutine, if there is one."
     try:
-        return Optional.Some(_current_span.get())
+        return _current_span.get().span
     except LookupError:
         return None
+
+def attach_span(Optional[Span] span) -> ContextToken:
+    "Bind a span for this coroutine and return its restoration token."
+    return _current_span.set(_SpanBinding(span))
+
+def detach_span(ContextToken token):
+    "Restore the previous span binding."
+    _current_span.reset(token)
+
+def non_recording_span(SpanContext context) -> Span:
+    "Wrap a valid propagation context without recording span data."
+    if not context.is_valid():
+        raise ValueError("span context must be valid")
+    return Span(
+        "",
+        SpanKind.Internal,
+        context._snapshot(),
+        None,
+        threading.Lock(),
+        0,
+        _recording=False,
+    )
 
 def _random_id(int64 width, str zero) -> str:
     auto value = hex.encode(crypto.random_bytes(width))
@@ -327,14 +353,14 @@ struct CurrentSpan:
             attributes=self._attributes,
             links=self._links,
         )
-        self._token = Optional.Some(_current_span.set(span))
+        self._token = Optional.Some(attach_span(Optional.Some(span)))
         self._span = Optional.Some(span)
         return span
 
     def __exit__(self):
         match self._token:
             case Optional.Some(token):
-                _current_span.reset(token)
+                detach_span(token)
                 self._token = None
             case Optional.None:
                 return
