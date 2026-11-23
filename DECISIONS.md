@@ -146,7 +146,7 @@ set. Both hooks run synchronously in registration order. A span keeps the
 processor list it started with, and callback failures are logged without
 interrupting the remaining callbacks.
 
-Native CI exercises the original optional timestamp constructor and the
-read-only processor contract. Those paths are blocked by
-[Zap #1308](https://github.com/zaplang-io/zap/issues/1308) and
-[Zap #1309](https://github.com/zaplang-io/zap/issues/1309).
+Native tests cover explicit optional timestamps and optional values returned by
+the read-only span interface. These paths use the compiler fixes in
+[Zap #1318](https://github.com/zaplang-io/zap/pull/1318) and
+[Zap #1313](https://github.com/zaplang-io/zap/pull/1313).
