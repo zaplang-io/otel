@@ -40,6 +40,18 @@ The codec accepts up to 64 members and 8,192 bytes. The value layer uses
 `url.unquote(errors="replace")` for invalid UTF-8 and percent-encodes values
 and property values on output. A literal `+` is preserved when decoding.
 
+`otel.propagate` follows Python's `inject` and `extract` context defaults.
+Injection uses the current context, and extraction uses the root context,
+unless an explicit context is supplied. Carrier fields are matched without
+regard to case. Multiple differently cased keys for the same field are
+ambiguous. Callers combine repeated values in wire order before extraction.
+
+Invalid trace headers and baggage are handled independently. A valid parent
+with invalid trace state keeps the parent and clears the state. Extracted
+parents are remote non-recording spans. `attach` and `detach` bind and restore
+span and baggage together in coroutine-local storage. `set_baggage` derives a
+new context with the updated entry.
+
 ### Environment resource attributes ([#6](https://github.com/zaplang-io/otel/issues/6))
 
 Follow the [OpenTelemetry Resource SDK](https://opentelemetry.io/docs/specs/otel/resource/sdk/)
