@@ -130,6 +130,10 @@ Observable gauge callbacks will return a list of observations to the reader.
 The counter sum retains integer precision until a double is added. It rejects
 negative, nonfinite, and overflowing additions.
 
+The metrics SDK draft adds named meters, counter registration, and cumulative
+in-memory collection. Attribute-keyed aggregation and the remaining instruments
+are tracked in [#3](https://github.com/zaplang-io/otel/issues/3).
+
 ## OTLP endpoints
 
 OTLP/HTTP uses the signal-specific endpoint when configured. Otherwise, it

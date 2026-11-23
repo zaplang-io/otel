@@ -111,6 +111,16 @@ integers. A double measurement promotes the series total to double. Negative
 and nonfinite measurements, and totals outside the numeric range, raise
 `ValueError` before the series is updated.
 
+Meters are cached by instrumentation scope name. Counter registration uses a
+case-insensitive instrument name together with its unit and description. An
+in-memory reader takes cumulative snapshots of registered measurements and
+their provider resource.
+
+Collection through a meter's instrument registry is blocked on
+[Zap #1329](https://github.com/zaplang-io/zap/issues/1329). Per-attribute
+aggregation depends on structural dictionary equality in
+[Zap #1328](https://github.com/zaplang-io/zap/issues/1328).
+
 ### OTLP/HTTP endpoint resolution ([#5](https://github.com/zaplang-io/otel/issues/5))
 
 Follow the [OTLP Exporter specification](https://opentelemetry.io/docs/specs/otel/protocol/exporter/#endpoint-urls-for-otlphttp).
