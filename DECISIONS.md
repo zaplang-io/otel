@@ -127,8 +127,15 @@ double boundary. The collected histogram sum is a double. Nonfinite
 measurements and overflowing sums raise `ValueError` before any bucket count
 changes.
 
-Observable gauge callbacks are blocked on callable list elements in
-[Zap #1348](https://github.com/zaplang-io/zap/issues/1348).
+Gauge collection retains the last valid observation per attribute set in a
+collection. It skips nonfinite readings, logs callback errors, and continues
+with the next callback. The reader passes the requested collection timeout
+to each callback in `CallbackOptions`.
+
+The periodic reader will expose `run()` for the caller to spawn in its own
+`scope:`. Canceling the scope must wake the reader while it waits for the next
+collection. Scheduling depends on the cancellable coroutine timer tracked in
+[Zap #1357](https://github.com/zaplang-io/zap/issues/1357).
 
 ### OTLP/HTTP endpoint resolution ([#5](https://github.com/zaplang-io/otel/issues/5))
 

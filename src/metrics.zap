@@ -17,6 +17,7 @@ struct MetricsData:
     resource.Resource resource
     list[CounterPoint] counters
     list[HistogramPoint] histograms
+    list[GaugePoint] gauges
 
 struct HistogramPoint:
     str meter_name
@@ -28,6 +29,21 @@ struct HistogramPoint:
     list[float64] boundaries
     list[int64] bucket_counts
     dict[str, attr.AttributeValue] attributes
+
+struct GaugePoint:
+    str meter_name
+    str name
+    str unit
+    str description
+    number.MetricNumber value
+    dict[str, attr.AttributeValue] attributes
+
+struct CallbackOptions:
+    float64 timeout_millis = 10000.0
+
+struct Observation:
+    number.MetricNumber value
+    dict[str, attr.AttributeValue] attributes = {}
 
 struct _CounterSeries:
     dict[str, attr.AttributeValue] attributes
@@ -147,11 +163,62 @@ struct Histogram:
                     ),
                 )
 
+struct ObservableGauge:
+    str _name
+    str _unit
+    str _description
+    list[fn(CallbackOptions) -> list[Observation]] _callbacks
+
+    def _collect(
+        self,
+        str meter_name,
+        CallbackOptions options,
+        list[GaugePoint] points,
+    ):
+        list[GaugePoint] readings = []
+        for callback in self._callbacks:
+            try:
+                auto observations = callback(CallbackOptions(options.timeout_millis))
+                for observation in observations:
+                    self._record_observation(meter_name, observation, readings)
+            except Exception:
+                logging.warning("OpenTelemetry gauge collection callback failed")
+        for point in readings:
+            points.append(point)
+
+    def _record_observation(
+        self,
+        str meter_name,
+        Observation observation,
+        list[GaugePoint] readings,
+    ):
+        match observation.value:
+            case number.MetricNumber.Double(value):
+                if math.isnan(value) or math.isinf(value):
+                    return
+            case number.MetricNumber.Int(value):
+                pass
+        for point in readings:
+            if point.attributes == observation.attributes:
+                point.value = observation.value
+                return
+        readings.append(
+            GaugePoint(
+                meter_name,
+                self._name,
+                self._unit,
+                self._description,
+                observation.value,
+                _snapshot_attributes(observation.attributes),
+            ),
+        )
+
 struct Meter:
     str _name
     Lock _lock = threading.Lock()
     list[Counter] _counters = []
     list[Histogram] _histograms = []
+    list[ObservableGauge] _gauges = []
 
     def name(self) -> str:
         "Return the instrumentation scope name."
@@ -193,12 +260,38 @@ struct Meter:
             self._histograms.append(histogram)
             return histogram
 
-    def _collect(self, MetricsData data):
+    def create_observable_gauge(
+        self,
+        str name,
+        list[fn(CallbackOptions) -> list[Observation]] callbacks = [],
+        str unit = "",
+        str description = "",
+    ) -> ObservableGauge:
+        "Get or register a gauge whose callbacks return observations at collection."
+        _validate_instrument_name(name)
+        auto canonical = name.lower()
+        list[fn(CallbackOptions) -> list[Observation]] registered = []
+        for callback in callbacks:
+            registered.append(callback)
+        with self._lock:
+            for gauge in self._gauges:
+                if gauge._name.lower() == canonical and gauge._unit == unit and gauge._description == description:
+                    return gauge
+            auto gauge = ObservableGauge(name, unit, description, registered)
+            self._gauges.append(gauge)
+            return gauge
+
+    def _collect(self, MetricsData data, CallbackOptions options):
+        list[ObservableGauge] gauges = []
         with self._lock:
             for counter in self._counters:
                 counter._collect(self._name, data.counters)
             for histogram in self._histograms:
                 histogram._collect(self._name, data.histograms)
+            for gauge in self._gauges:
+                gauges.append(gauge)
+        for gauge in gauges:
+            gauge._collect(self._name, options, data.gauges)
 
 struct MeterProvider:
     resource.Resource _resource = resource.create()
@@ -217,22 +310,24 @@ struct MeterProvider:
             self._meters.append(meter)
             return meter
 
-    def _collect(self) -> MetricsData:
+    def _collect(self, CallbackOptions options) -> MetricsData:
         list[Meter] meters = []
         with self._lock:
             for meter in self._meters:
                 meters.append(meter)
-        auto data = MetricsData(self._resource, [], [])
+        auto data = MetricsData(self._resource, [], [], [])
         for meter in meters:
-            meter._collect(data)
+            meter._collect(data, options)
         return data
 
 struct InMemoryMetricReader:
     MeterProvider _provider
 
-    def get_metrics_data(self) -> MetricsData:
+    def get_metrics_data(self, float64 timeout_millis = 10000.0) -> MetricsData:
         "Collect a cumulative snapshot from this reader's provider."
-        return self._provider._collect()
+        if timeout_millis <= 0.0 or math.isnan(timeout_millis) or math.isinf(timeout_millis):
+            raise ValueError("collection timeout must be finite and positive")
+        return self._provider._collect(CallbackOptions(timeout_millis))
 
 const MeterProvider _default_provider = MeterProvider()
 
