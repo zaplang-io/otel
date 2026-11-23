@@ -9,6 +9,27 @@ enum AttributeValue:
     DoubleArray(list[float64] values)
     StrArray(list[str] values)
 
+    def __eq__(self, AttributeValue other) -> bool:
+        match (self, other):
+            case (AttributeValue.Bool(left), AttributeValue.Bool(right)):
+                return left == right
+            case (AttributeValue.Int(left), AttributeValue.Int(right)):
+                return left == right
+            case (AttributeValue.Double(left), AttributeValue.Double(right)):
+                return left == right
+            case (AttributeValue.Str(left), AttributeValue.Str(right)):
+                return left == right
+            case (AttributeValue.BoolArray(left), AttributeValue.BoolArray(right)):
+                return left == right
+            case (AttributeValue.IntArray(left), AttributeValue.IntArray(right)):
+                return left == right
+            case (AttributeValue.DoubleArray(left), AttributeValue.DoubleArray(right)):
+                return left == right
+            case (AttributeValue.StrArray(left), AttributeValue.StrArray(right)):
+                return left == right
+            case _:
+                return False
+
     def snapshot(self) -> AttributeValue:
         "Return an attribute with independent storage for any array payload."
         match self:

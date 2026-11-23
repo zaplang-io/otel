@@ -130,8 +130,9 @@ Observable gauge callbacks will return a list of observations to the reader.
 The counter sum retains integer precision until a double is added. It rejects
 negative, nonfinite, and overflowing additions.
 
-The metrics SDK draft adds named meters, counter registration, and cumulative
-in-memory collection. Attribute-keyed aggregation and the remaining instruments
+Named meters register counters and histograms. Both group measurements by
+attribute value. `InMemoryMetricReader.get_metrics_data()` returns cumulative
+snapshots with the provider resource. Observable gauges and periodic collection
 are tracked in [#3](https://github.com/zaplang-io/otel/issues/3).
 
 ## OTLP endpoints

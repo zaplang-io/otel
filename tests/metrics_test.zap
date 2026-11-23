@@ -118,3 +118,139 @@ def meters_and_instruments_validate_names():
     meter.create_counter("Jobs.Active-v2_1/per_second")
     with expect_raises(ValueError):
         meter.create_counter(maximum + "x")
+
+@test
+def counters_group_equal_typed_attributes_and_keep_distinct_series():
+    auto provider = metrics.MeterProvider()
+    auto counter = provider.get_meter("inventory").create_counter("items")
+    auto reader = metrics.InMemoryMetricReader(provider)
+    list[bool] flags = [True, False]
+    dict[str, attr.AttributeValue] first = {
+        "flags": attr.AttributeValue.BoolArray(flags),
+        "region": attr.AttributeValue.Str("north"),
+    }
+    counter.add(number.MetricNumber.Int(3), attributes=first)
+    flags[0] = False
+    first["region"] = attr.AttributeValue.Str("external mutation")
+    counter.add(
+        number.MetricNumber.Int(4),
+        attributes={
+            "region": attr.AttributeValue.Str("north"),
+            "flags": attr.AttributeValue.BoolArray([True, False]),
+        },
+    )
+    counter.add(
+        number.MetricNumber.Int(10),
+        attributes={
+            "region": attr.AttributeValue.Str("north"),
+            "flags": attr.AttributeValue.BoolArray([False, True]),
+        },
+    )
+    counter.add(
+        number.MetricNumber.Int(13),
+        attributes={"region": attr.AttributeValue.Int(1)},
+    )
+    counter.add(
+        number.MetricNumber.Int(20),
+        attributes={"region": attr.AttributeValue.Double(1.0)},
+    )
+    auto points = reader.get_metrics_data().counters
+    assert len(points) == 4
+    assert _int_value(points[0].value) == 7
+    assert _int_value(points[1].value) == 10
+    assert _int_value(points[2].value) == 13
+    assert _int_value(points[3].value) == 20
+    points[0].attributes["region"] = attr.AttributeValue.Str("snapshot mutation")
+    counter.add(
+        number.MetricNumber.Int(5),
+        attributes={
+            "region": attr.AttributeValue.Str("north"),
+            "flags": attr.AttributeValue.BoolArray([True, False]),
+        },
+    )
+    assert _int_value(reader.get_metrics_data().counters[0].value) == 12
+    with expect_raises(ValueError):
+        counter.add(
+            number.MetricNumber.Int(4),
+            attributes={"": attr.AttributeValue.Str("invalid")},
+        )
+    assert len(reader.get_metrics_data().counters) == 4
+
+@test
+def histograms_collect_inclusive_buckets_and_attribute_series():
+    auto provider = metrics.MeterProvider()
+    auto meter = provider.get_meter("inventory")
+    auto reader = metrics.InMemoryMetricReader(provider)
+    list[float64] boundaries = [-1.0, 2.0, 5.0]
+    auto histogram = meter.create_histogram(
+        "duration",
+        unit="ms",
+        explicit_bucket_boundaries_advisory=Optional.Some(boundaries),
+    )
+    assert histogram is meter.create_histogram("DURATION", unit="ms")
+    boundaries[0] = -9.0
+    assert len(reader.get_metrics_data().histograms) == 0
+    histogram.record(
+        number.MetricNumber.Int(-1),
+        attributes={"region": attr.AttributeValue.Str("north")},
+    )
+    histogram.record(
+        number.MetricNumber.Double(2.0),
+        attributes={"region": attr.AttributeValue.Str("north")},
+    )
+    histogram.record(
+        number.MetricNumber.Double(2.5),
+        attributes={"region": attr.AttributeValue.Str("north")},
+    )
+    histogram.record(
+        number.MetricNumber.Int(6),
+        attributes={"region": attr.AttributeValue.Str("north")},
+    )
+    histogram.record(
+        number.MetricNumber.Int(3),
+        attributes={"region": attr.AttributeValue.Str("south")},
+    )
+    auto points = reader.get_metrics_data().histograms
+    assert len(points) == 2
+    assert points[0].name == "duration"
+    assert points[0].unit == "ms"
+    assert points[0].count == 4
+    assert points[0].sum == 9.5
+    assert points[0].boundaries == [-1.0, 2.0, 5.0]
+    assert points[0].bucket_counts == [1, 1, 1, 1]
+    assert points[1].bucket_counts == [0, 0, 1, 0]
+    points[0].bucket_counts[0] = 70
+    points[0].boundaries[0] = -30.0
+    assert reader.get_metrics_data().histograms[0].bucket_counts == [1, 1, 1, 1]
+    assert reader.get_metrics_data().histograms[0].boundaries == [-1.0, 2.0, 5.0]
+
+@test
+def histograms_use_exact_integer_placement_and_reject_invalid_values():
+    auto provider = metrics.MeterProvider()
+    auto meter = provider.get_meter("test")
+    auto reader = metrics.InMemoryMetricReader(provider)
+    auto fixture = meter.create_histogram(
+        "exact",
+        explicit_bucket_boundaries_advisory=Optional.Some([9007199254740992.0]),
+    )
+    fixture.record(number.MetricNumber.Int(9007199254740992))
+    fixture.record(number.MetricNumber.Int(9007199254740993))
+    assert reader.get_metrics_data().histograms[0].bucket_counts == [1, 1]
+    for value in [math.nan, math.inf, -math.inf]:
+        with expect_raises(ValueError):
+            fixture.record(number.MetricNumber.Double(value))
+    with expect_raises(ValueError):
+        meter.create_histogram(
+            "bad",
+            explicit_bucket_boundaries_advisory=Optional.Some([2.0, 1.0]),
+        )
+    list[float64] empty_boundaries = []
+    auto one_bucket = meter.create_histogram(
+        "all",
+        explicit_bucket_boundaries_advisory=Optional.Some(empty_boundaries),
+    )
+    one_bucket.record(number.MetricNumber.Double(1.0e308))
+    with expect_raises(ValueError):
+        one_bucket.record(number.MetricNumber.Double(1.0e308))
+    assert reader.get_metrics_data().histograms[1].bucket_counts == [1]
+    assert reader.get_metrics_data().histograms[1].sum == 1.0e308

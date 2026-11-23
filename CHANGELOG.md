@@ -17,3 +17,4 @@
 - Added validated integer and double counter summation.
 - Added W3C carrier injection and extraction, baggage binding, and remote-parent continuation.
 - Added named meters, counter registration, and cumulative counter snapshots.
+- Added attribute-keyed counters and histogram aggregation.

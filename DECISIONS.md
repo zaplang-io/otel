@@ -116,10 +116,19 @@ case-insensitive instrument name together with its unit and description. An
 in-memory reader takes cumulative snapshots of registered measurements and
 their provider resource.
 
-Collection through a meter's instrument registry is blocked on
-[Zap #1329](https://github.com/zaplang-io/zap/issues/1329). Per-attribute
-aggregation depends on structural dictionary equality in
-[Zap #1328](https://github.com/zaplang-io/zap/issues/1328).
+Measurements with equal attribute maps share a series regardless of map
+insertion order. `AttributeValue` equality compares matching tags and their
+payloads. The SDK snapshots attributes and array payloads when recording and
+collecting to keep series stable. This uses the structural dictionary equality
+from [Zap #1328](https://github.com/zaplang-io/zap/issues/1328).
+
+Histogram bucket placement preserves integer precision when comparing with a
+double boundary. The collected histogram sum is a double. Nonfinite
+measurements and overflowing sums raise `ValueError` before any bucket count
+changes.
+
+Observable gauge callbacks are blocked on callable list elements in
+[Zap #1348](https://github.com/zaplang-io/zap/issues/1348).
 
 ### OTLP/HTTP endpoint resolution ([#5](https://github.com/zaplang-io/otel/issues/5))
 
