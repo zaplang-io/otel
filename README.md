@@ -81,6 +81,9 @@ The baggage wire codec accepts up to 64 members and 8,192 bytes per combined
 header. The planned carrier is a `dict[str, str]` with repeated HTTP header
 values combined in wire order.
 
+The baggage value codec percent-decodes UTF-8 with replacement for malformed
+sequences. It preserves entry order and property metadata.
+
 ## Resource configuration
 
 The resource SDK reads `OTEL_RESOURCE_ATTRIBUTES` as a comma-separated list of
