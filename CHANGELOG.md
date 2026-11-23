@@ -14,3 +14,4 @@
 - Added span attributes, timestamped events, links, and status.
 - Added synchronous start and end hooks for tracer-provider span processors.
 - Added UTF-8 baggage value decoding and percent-encoded serialization.
+- Added validated integer and double counter summation.

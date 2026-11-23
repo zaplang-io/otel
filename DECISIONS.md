@@ -94,6 +94,11 @@ timeout) and return a `list[Observation]`. An observation carries a
 `MetricNumber` and its attribute mapping. This follows Python's returned
 observations. Go invokes callbacks with an observer that accepts measurements.
 
+Counter sums retain signed 64-bit precision while all measurements are
+integers. A double measurement promotes the series total to double. Negative
+and nonfinite measurements, and totals outside the numeric range, raise
+`ValueError` before the series is updated.
+
 ### OTLP/HTTP endpoint resolution ([#5](https://github.com/zaplang-io/otel/issues/5))
 
 Follow the [OTLP Exporter specification](https://opentelemetry.io/docs/specs/otel/protocol/exporter/#endpoint-urls-for-otlphttp).
