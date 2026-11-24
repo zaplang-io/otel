@@ -111,6 +111,39 @@ integers. A double measurement promotes the series total to double. Negative
 and nonfinite measurements, and totals outside the numeric range, raise
 `ValueError` before the series is updated.
 
+Meters are cached by instrumentation scope name. Counter registration uses a
+case-insensitive instrument name together with its unit and description. An
+in-memory reader takes cumulative snapshots of registered measurements and
+their provider resource.
+
+Measurements with equal attribute maps share a series regardless of map
+insertion order. `AttributeValue` equality compares matching tags and their
+payloads. The SDK snapshots attributes and array payloads when recording and
+collecting to keep series stable. This uses the structural dictionary equality
+from [Zap #1328](https://github.com/zaplang-io/zap/issues/1328).
+
+Histogram bucket placement preserves integer precision when comparing with a
+double boundary. The collected histogram sum is a double. Nonfinite
+measurements and overflowing sums raise `ValueError` before any bucket count
+changes.
+
+Gauge collection retains the last valid observation per attribute set in a
+collection. It skips nonfinite readings, logs callback errors, and continues
+with the next callback. The reader passes the requested collection timeout
+to each callback in `CallbackOptions`.
+
+The caller spawns `PeriodicExportingMetricReader.run()` in its own `scope:`.
+The reader delays the first collection by its configured interval and waits
+one interval after each export. The scoped sleep uses the timer from
+[Zap #1357](https://github.com/zaplang-io/zap/issues/1357), so caller
+cancellation interrupts a pending wait on Linux.
+
+Each collection and export share a cooperative scope timeout. `MetricExporter`
+receives a snapshot and the timeout in milliseconds and reports success or
+failure. The reader logs failed exports and continues at the next interval.
+`collect_once` provides an immediate export. The reader skips overlapping
+collections to keep calls to its exporter sequential.
+
 ### OTLP/HTTP endpoint resolution ([#5](https://github.com/zaplang-io/otel/issues/5))
 
 Follow the [OTLP Exporter specification](https://opentelemetry.io/docs/specs/otel/protocol/exporter/#endpoint-urls-for-otlphttp).

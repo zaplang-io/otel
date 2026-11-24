@@ -10,6 +10,21 @@ struct HistogramBuckets:
             result.append(boundary)
         return result
 
+    def bucket_count(self) -> int64:
+        return len(self._boundaries) + 1
+
+    def integer_bucket_index(self, int64 measurement) -> int64:
+        auto lower = 0
+        auto upper = len(self._boundaries)
+        while lower < upper:
+            auto middle = lower + (upper - lower) // 2
+            auto bound = self._boundaries[middle]
+            if bound >= 9223372036854775808.0 or bound >= -9223372036854775808.0 and measurement <= int64(math.floor(bound)):
+                upper = middle
+            else:
+                lower = middle + 1
+        return lower
+
     def bucket_index(self, float64 measurement) -> int64:
         if math.isnan(measurement) or math.isinf(measurement):
             raise ValueError("histogram measurement must be finite")

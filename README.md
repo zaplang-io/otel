@@ -126,9 +126,20 @@ strictly increasing. Each upper bound belongs to its bucket. The metric
 instruments and reader are tracked in [#3](https://github.com/zaplang-io/otel/issues/3).
 
 Counters and histograms use `MetricNumber.Int` or `MetricNumber.Double`.
-Observable gauge callbacks will return a list of observations to the reader.
+Observable gauge callbacks return a list of observations to the reader.
 The counter sum retains integer precision until a double is added. It rejects
 negative, nonfinite, and overflowing additions.
+
+Named meters register counters, histograms, and observable gauges. All group
+measurements by attribute value. `InMemoryMetricReader.get_metrics_data()`
+returns cumulative counters and histograms, the latest gauge values, and the
+provider resource.
+
+Construct `PeriodicExportingMetricReader(provider, exporter)` with a
+`MetricExporter` and `spawn reader.run()` in the caller's `scope:`. The
+default collection interval is 60 seconds and the default collection and
+export timeout is 30 seconds. On Linux, scope cancellation wakes the reader
+while it waits. Use `collect_once()` to export an immediate snapshot.
 
 ## OTLP endpoints
 
