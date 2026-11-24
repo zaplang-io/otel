@@ -19,3 +19,4 @@
 - Added named meters, counter registration, and cumulative counter snapshots.
 - Added attribute-keyed counters and histogram aggregation.
 - Added observable gauge callbacks and last-value aggregation.
+- Added the caller-owned periodic metric reader and exporter hook.

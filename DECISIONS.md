@@ -132,10 +132,17 @@ collection. It skips nonfinite readings, logs callback errors, and continues
 with the next callback. The reader passes the requested collection timeout
 to each callback in `CallbackOptions`.
 
-The periodic reader will expose `run()` for the caller to spawn in its own
-`scope:`. Canceling the scope must wake the reader while it waits for the next
-collection. Scheduling depends on the cancellable coroutine timer tracked in
-[Zap #1357](https://github.com/zaplang-io/zap/issues/1357).
+The caller spawns `PeriodicExportingMetricReader.run()` in its own `scope:`.
+The reader delays the first collection by its configured interval and waits
+one interval after each export. The scoped sleep uses the timer from
+[Zap #1357](https://github.com/zaplang-io/zap/issues/1357), so caller
+cancellation interrupts a pending wait on Linux.
+
+Each collection and export share a cooperative scope timeout. `MetricExporter`
+receives a snapshot and the timeout in milliseconds and reports success or
+failure. The reader logs failed exports and continues at the next interval.
+`collect_once` provides an immediate export. The reader skips overlapping
+collections to keep calls to its exporter sequential.
 
 ### OTLP/HTTP endpoint resolution ([#5](https://github.com/zaplang-io/otel/issues/5))
 

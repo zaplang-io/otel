@@ -329,6 +329,73 @@ struct InMemoryMetricReader:
             raise ValueError("collection timeout must be finite and positive")
         return self._provider._collect(CallbackOptions(timeout_millis))
 
+enum MetricExportResult:
+    Success
+    Failure
+
+interface MetricExporter:
+    def export(
+        self,
+        MetricsData metrics_data,
+        int64 timeout_millis,
+    ) -> MetricExportResult
+
+struct PeriodicExportingMetricReader:
+    MeterProvider _provider
+    MetricExporter _exporter
+    int64 export_interval_millis = 60000
+    int64 export_timeout_millis = 30000
+    Lock _lock = threading.Lock()
+    bool _running = False
+    bool _exporting = False
+
+    def collect_once(self) -> MetricExportResult:
+        "Collect and export one snapshot. A concurrent collection is skipped."
+        auto timeout_millis = self.export_timeout_millis
+        _validate_reader_duration(timeout_millis)
+        with self._lock:
+            if self._exporting:
+                return MetricExportResult.Failure
+            self._exporting = True
+        MetricExportResult result = MetricExportResult.Failure
+        try:
+            scope(timeout=timeout_millis):
+                auto data = self._provider._collect(
+                    CallbackOptions(float64(timeout_millis)),
+                )
+                result = self._exporter.export(data, timeout_millis)
+        except Exception:
+            result = MetricExportResult.Failure
+        finally:
+            with self._lock:
+                self._exporting = False
+        if result == MetricExportResult.Failure:
+            logging.warning("OpenTelemetry periodic metric export failed")
+        return result
+
+    def run(self):
+        "Collect on a fixed delay until the caller's owning scope is canceled."
+        auto interval_millis = self.export_interval_millis
+        _validate_reader_duration(interval_millis)
+        _validate_reader_duration(self.export_timeout_millis)
+        with self._lock:
+            if self._running:
+                raise ValueError("periodic metric reader is already running")
+            self._running = True
+        try:
+            while True:
+                time.sleep_for(time.millis(interval_millis))
+                self.collect_once()
+        finally:
+            with self._lock:
+                self._running = False
+
+def _validate_reader_duration(int64 milliseconds):
+    if milliseconds <= 0 or milliseconds > 9223372036854:
+        raise ValueError(
+            "periodic metric reader duration is outside the positive nanosecond range",
+        )
+
 const MeterProvider _default_provider = MeterProvider()
 
 def get_meter_provider() -> MeterProvider:
